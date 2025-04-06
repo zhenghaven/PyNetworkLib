@@ -13,4 +13,6 @@ from .Server.TestPySocketServer import TestPySocketServer
 from .Server.HTTP.Utils.TestHostField import TestHostField
 from .Server.HTTP.Utils.TestHandlerState import TestHandlerState
 from .Server.HTTP.TestServer import TestServer
+from .Server.HTTP.Auth.TestConcurrentLimiter import TestConcurrentLimiter
+from .Server.HTTP.Auth.TestRateLimiter import TestRateLimiter
 
