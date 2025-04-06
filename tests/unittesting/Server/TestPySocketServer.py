@@ -80,7 +80,7 @@ class TestPySocketServer(unittest.TestCase):
 			pass
 
 		server = TestServer(
-			server_address=('127.0.0.1', 0),
+			server_address=('::1', 0),
 			RequestHandlerClass=socketserver.BaseRequestHandler,
 			serverInit = {},
 		)
@@ -89,8 +89,8 @@ class TestPySocketServer(unittest.TestCase):
 
 		try:
 			testData = b'Hello, world\n'
-			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
-				client.connect(('127.0.0.1', serverPort))
+			with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as client:
+				client.connect(('::1', serverPort))
 				client.sendall(testData)
 				# client.settimeout(0.5)
 				# echoData = client.recv(1024)
@@ -131,7 +131,8 @@ class TestPySocketServer(unittest.TestCase):
 			pass
 
 		server = TestServer(
-			server_address=('127.0.0.1', 0),
+			# also test if _FixAddrFamily works for positional arguments
+			('::1', 0),
 			RequestHandlerClass=BusyTCPHandler,
 			serverInit = {
 				"addData": {
@@ -144,8 +145,8 @@ class TestPySocketServer(unittest.TestCase):
 
 		try:
 			testData = b'Hello, world\n'
-			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
-				client.connect(('127.0.0.1', serverPort))
+			with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as client:
+				client.connect(('::1', serverPort))
 
 				# send the test data to trigger the busy loop
 				client.sendall(testData)
