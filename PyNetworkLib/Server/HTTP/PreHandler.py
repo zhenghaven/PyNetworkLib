@@ -100,6 +100,14 @@ class PreHandler(PyHandlerBase):
 			*args,
 		)
 
+	def LogDebug(self, format: str, *args):
+		'''Log a debug message.'''
+		self.LogMessageWithLevel(
+			logging.DEBUG,
+			format,
+			*args,
+		)
+
 	def HandleOneRequest(self):
 		'''Handle a single HTTP request.
 
@@ -155,6 +163,11 @@ class PreHandler(PyHandlerBase):
 			)
 
 		# send the response
-		if not self.hasResponseSent:
+		if (
+			# ensure that the server is not terminated
+			(not self.server.terminateEvent.is_set())
+			# and the response has not been sent yet
+			and (not self.hasResponseSent)
+		):
 			self.DoResponse()
 

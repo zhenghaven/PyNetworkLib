@@ -8,9 +8,10 @@
 ###
 
 
-import http.server
 import threading
 import unittest
+
+from http import HTTPStatus
 
 import requests
 
@@ -35,10 +36,7 @@ class HappyDownstreamHandler(DownstreamHandlerBase):
 		'''Handle the request.'''
 
 		# set the response code to 200 OK
-		pyHandler.SetCodeAndTextMessage(
-			http.server.HTTPStatus.OK,
-			'OK',
-		)
+		pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, 'OK')
 
 
 class TestServer(unittest.TestCase):
