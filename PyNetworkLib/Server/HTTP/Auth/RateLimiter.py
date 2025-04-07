@@ -73,7 +73,8 @@ class RateLimiter(DownstreamHandlerBase):
 		host: HOST_FIELD_TYPES,
 		relPath: str,
 		pyHandler: PreHandler,
-		state: HandlerState,
+		handlerState: HandlerState,
+		reqState: dict,
 		terminateEvent: threading.Event,
 	) -> None:
 		'''Handle the request.'''
@@ -87,7 +88,8 @@ class RateLimiter(DownstreamHandlerBase):
 				host=host,
 				relPath=relPath,
 				pyHandler=pyHandler,
-				state=state,
+				handlerState=handlerState,
+				reqState=reqState,
 				terminateEvent=terminateEvent,
 			)
 		else:

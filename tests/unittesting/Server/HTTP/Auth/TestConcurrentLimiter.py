@@ -43,7 +43,8 @@ class BusyHandler(DownstreamHandlerBase):
 		host: HOST_FIELD_TYPES,
 		relPath: str,
 		pyHandler: PyHandlerBase,
-		state: HandlerState,
+		handlerState: HandlerState,
+		reqState: dict,
 		terminateEvent: threading.Event,
 	) -> None:
 		'''Handle the request.'''

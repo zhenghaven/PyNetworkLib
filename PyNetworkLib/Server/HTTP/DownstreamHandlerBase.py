@@ -30,7 +30,8 @@ class DownstreamHandlerBase:
 		host: HOST_FIELD_TYPES,
 		relPath: str,
 		pyHandler: PyHandlerBase,
-		state: HandlerState,
+		handlerState: HandlerState,
+		reqState: dict,
 		terminateEvent: threading.Event,
 	) -> None:
 		'''Handle the request.
@@ -39,7 +40,11 @@ class DownstreamHandlerBase:
 		of the request.
 		:param host: The host field parsed from the request header.
 		:param pyHandler: The HTTP request handler object.
-		:param state: The state of the handler.
+		:param handlerState: The state of the handler of a server shared by
+			all requests made to that server.
+		:param reqState: The state of the current request.
+		:param terminateEvent: The event that is set when the server is
+			terminated.
 		'''
 
 		raise NotImplementedError(

@@ -149,7 +149,8 @@ class PreHandler(PyHandlerBase):
 				host=host,
 				relPath=self.path,
 				pyHandler=self,
-				state=self.server.handlerState,
+				handlerState=self.server.handlerState,
+				reqState={},
 				terminateEvent=self.server.terminateEvent,
 			)
 		except Exception as e:
