@@ -11,13 +11,13 @@
 
 import socketserver
 
+from ...TLS.SSLContext import SSLContext
+from ..HTTP.DownstreamHandlerBase import DownstreamHandlerBase
+from ..HTTP.Server import PyServer as HTTPPyServer
 from ..PySocketServer import FromPySocketServer
-from .DownstreamHandlerBase import DownstreamHandlerBase
-from .PreHandler import PreHandler
-from .ServerBase import ServerBase
 
 
-class PyServer(ServerBase):
+class PyServer(HTTPPyServer):
 
 	allow_reuse_address = 0 # This is set to 0 to prevent the server from reusing the address.
 
@@ -25,15 +25,22 @@ class PyServer(ServerBase):
 		self,
 		server_address,
 		downstreamHTTPHdlr: DownstreamHandlerBase,
+		sslContext: SSLContext,
 		enabledCommands: list[str] = ['GET', 'POST'],
 		bind_and_activate = True,
 	):
 		super().__init__(
 			server_address=server_address,
-			RequestHandlerClass=PreHandler,
 			downstreamHTTPHdlr=downstreamHTTPHdlr,
 			enabledCommands=enabledCommands,
 			bind_and_activate=bind_and_activate,
+		)
+
+		self._sslCtx = sslContext
+		self.socket = self._sslCtx.WrapSocket(
+			sock=self.socket,
+			server_side=True,
+			do_handshake_on_connect=True,
 		)
 
 
