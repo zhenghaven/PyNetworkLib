@@ -35,15 +35,15 @@ class TestServer(unittest.TestCase):
 		if not os.path.exists(TMP_DIR):
 			os.makedirs(TMP_DIR)
 
-		with open(os.path.join(TEST_CRED_DIR, 'rootCaCert.cert'), 'r') as f:
+		with open(os.path.join(TEST_CRED_DIR, 'ed25519', 'rootCaCert.cert'), 'r') as f:
 			self._caPEMorDER = f.read()
 
-		self._svrCertChainPEMPath = os.path.join(TEST_CRED_DIR, 'leafCertChain1.pem')
+		self._svrCertChainPEMPath = os.path.join(TEST_CRED_DIR, 'ed25519', 'leafCertChain1.pem')
 		with open(self._svrCertChainPEMPath, 'r') as f:
 			self._svrCertChainPEM = f.read()
 		self._svrCertChain = load_pem_x509_certificates(self._svrCertChainPEM.encode())
 
-		self._svrPrivKeyPEMPath = os.path.join(TEST_CRED_DIR, 'leafPrivKey1.pem')
+		self._svrPrivKeyPEMPath = os.path.join(TEST_CRED_DIR, 'ed25519', 'leafPrivKey1.pem')
 		with open(self._svrPrivKeyPEMPath, 'r') as f:
 			self._svrPrivKeyPEM = f.read()
 		self._svrPrivKey = load_pem_private_key(
@@ -51,8 +51,8 @@ class TestServer(unittest.TestCase):
 			password=b'3ae9de86',
 		)
 
-		self._cltPrivKeyPEMPath = os.path.join(TEST_CRED_DIR, 'leafPrivKey2.pem')
-		self._cltCertChainPEMPath = os.path.join(TEST_CRED_DIR, 'leafCertChain2.pem')
+		self._cltPrivKeyPEMPath = os.path.join(TEST_CRED_DIR, 'ed25519', 'leafPrivKey2.pem')
+		self._cltCertChainPEMPath = os.path.join(TEST_CRED_DIR, 'ed25519', 'leafCertChain2.pem')
 
 		self._sslCtx = SSLContext.CreateDefaultContext(
 			isServerSide=True,

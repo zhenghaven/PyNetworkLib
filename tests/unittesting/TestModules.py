@@ -17,4 +17,5 @@ from .Server.HTTP.Auth.TestConcurrentLimiter import TestConcurrentLimiter
 from .Server.HTTP.Auth.TestRateLimiter import TestRateLimiter
 
 from .Server.HTTPS.TestServer import TestServer as TestHTTPSServer
+from .Server.HTTPS.Auth.TestTls import TestTls
 
