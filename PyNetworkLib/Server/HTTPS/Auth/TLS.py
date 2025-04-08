@@ -264,6 +264,15 @@ class TLS(DownstreamHandlerBase):
 			pyHandler.SetCodeAndTextMessage(code=403, message='Forbidden')
 			return
 
+		peerCertDer = sock.getpeercert(True)
+		try:
+			peerCert = load_der_x509_certificate(peerCertDer)
+		except:
+			# the peer certificate is not valid
+			pyHandler.LogDebug('TLS: failed to load peer certificate.')
+			pyHandler.SetCodeAndTextMessage(code=403, message='Forbidden')
+			return
+
 		if len(peerCertChain) == 0:
 			# the peer certificate chain is empty
 			pyHandler.LogDebug('TLS: empty peer certificate chain.')
@@ -288,6 +297,12 @@ class TLS(DownstreamHandlerBase):
 				raise RuntimeError('The certificate chain is empty.')
 
 			leafCert = certChain[0]
+
+			# ensure that the leaf cert is the same as the peer cert
+			assert (
+				leafCert.public_bytes(encoding=Encoding.DER)
+				== peerCert.public_bytes(encoding=Encoding.DER)
+			), 'The leaf cert is not the same as the peer cert.'
 
 			# store the peer certificate chain in the request state
 			reqState['peer_cert'] = leafCert
