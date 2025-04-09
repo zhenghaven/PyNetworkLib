@@ -37,8 +37,9 @@ from ...HTTP.Utils.HostField import HOST_FIELD_TYPES
 
 
 class TLS(DownstreamHandlerBase):
-	'''A concurrent limiter that limits the number of concurrent requests
-	being handled.
+	'''A TLS authenticator that double-check
+	(NOTE: HTTPS/TLS connection is required)
+	the authenticity of the requests being handled.
 	'''
 
 	def __init__(

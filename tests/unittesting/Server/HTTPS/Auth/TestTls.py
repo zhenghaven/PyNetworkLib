@@ -18,8 +18,8 @@ from http import HTTPStatus
 
 import requests
 
-from PyNetworkLib.Server.HTTPS.Auth.TLS import TLS as TLSAuth
 from PyNetworkLib.Client.HTTPS.HTTPSAdapters import HTTPSAdapter
+from PyNetworkLib.Server.HTTPS.Auth.TLS import TLS as TLSAuth
 from PyNetworkLib.Server.HTTPS.Server import ThreadingServer
 from PyNetworkLib.Server.HTTP.DownstreamHandlerBase import DownstreamHandlerBase
 from PyNetworkLib.Server.HTTP.PyHandlerBase import PyHandlerBase
