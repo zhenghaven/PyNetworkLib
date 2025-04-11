@@ -8,6 +8,8 @@
 ###
 
 
+import datetime
+import logging
 import os
 import secrets
 import socket
@@ -20,7 +22,7 @@ from cryptography.hazmat.primitives.serialization import (
 	BestAvailableEncryption,
 	load_pem_private_key,
 )
-from cryptography.x509.base import Certificate
+from cryptography.x509.base import Certificate, load_pem_x509_certificates
 
 
 class SSLContext:
@@ -76,10 +78,24 @@ class SSLContext:
 		:param pySslCtx: The Python SSL context to wrap.
 		'''
 
+		self._logger = logging.getLogger(f'{__name__}.{self.__class__.__name__}')
+
 		self._pySslCtx = pySslCtx
 
 		# to ensure highest security, TLSv1.3 is used by default.
 		self._pySslCtx.minimum_version = ssl.TLSVersion.TLSv1_3
+
+		# the certificate and private key have not been loaded yet
+		# so the expires_at is set to minimum datetime
+		self._expiresAt = datetime.datetime(
+			year=datetime.MINYEAR,
+			month=1,
+			day=1,
+			tzinfo=datetime.timezone.utc,
+		)
+		self._privKeyPath = None
+		self._certChainPath = None
+		self._password = None
 
 	def EnableTlsV1_2(self) -> None:
 		'''Enable TLSv1.2.
@@ -125,10 +141,42 @@ class SSLContext:
 		'''
 		self._pySslCtx.load_verify_locations(cadata=caPEMorDER)
 
+	def _LoadCertInfo(
+		self,
+		certChainPath: os.PathLike,
+	) -> None:
+		'''Load the certificate info from the given file.
+
+		:param certChainPath: The path to the certificate chain file.
+		'''
+		try:
+			with open(certChainPath, 'rb') as f:
+				certData = f.read()
+
+			cert = load_pem_x509_certificates(certData)
+		except Exception as e:
+			self._logger.error('Failed to load the certificate chain: %s', e)
+			return
+
+		if len(cert) < 1:
+			self._logger.error('The certificate chain is empty.')
+
+		# we assume cert[0] is the server certificate
+		svrCert = cert[0]
+
+		# get the expiresAt from the certificate
+		self._expiresAt = svrCert.not_valid_after_utc
+
+		expireAtStr = self._expiresAt.strftime('%Y-%m-%d %H:%M:%S')
+		self._logger.info(
+			'The expiration date of the certificate is %s UTC.',
+			expireAtStr,
+		)
+
 	def LoadCertChainFiles(
 		self,
-		privKeyPath: os.PathLike,
 		certChainPath: os.PathLike,
+		privKeyPath: os.PathLike,
 		password: str | bytes | None=None,
 	) -> None:
 		'''Load the private key and certificate chain from the given files.
@@ -138,6 +186,11 @@ class SSLContext:
 		:param password: The password for the private key file.
 			(`None` if the private key is not encrypted.)
 		'''
+		self._certChainPath = certChainPath
+		self._privKeyPath = privKeyPath
+		self._password = password
+		self._LoadCertInfo(certChainPath)
+
 		self._pySslCtx.load_cert_chain(
 			certfile=certChainPath,
 			keyfile=privKeyPath,
@@ -208,8 +261,8 @@ class SSLContext:
 
 		# load the private key and certificate chain from the temporary files
 		self.LoadCertChainFiles(
-			privKeyPath=randKeyFilePath,
 			certChainPath=randCertFilePath,
+			privKeyPath=randKeyFilePath,
 			password=privKeyPass
 		)
 
@@ -224,4 +277,52 @@ class SSLContext:
 	def SetVerifyModeCertNone(self) -> None:
 		'''Set the verify mode to CERT_NONE.'''
 		self._pySslCtx.verify_mode = ssl.CERT_NONE
+
+	def HasCertExpired(
+		self,
+		adjustment: datetime.timedelta | None=datetime.timedelta(days=1)
+	) -> bool:
+		'''Check if the certificate has expired.
+
+		:return: True if the certificate has expired, False otherwise.
+		'''
+		if adjustment is None:
+			adjustment = datetime.timedelta(days=0)
+
+		# make the adjustment to the expiresAt to make it "expires" earlier
+		# than the actual expiresAt
+		adjustedExpiresAt = self._expiresAt - adjustment
+
+		return datetime.datetime.now(datetime.timezone.utc) > adjustedExpiresAt
+
+	def ReloadCertChainFilesIfExpired(self) -> bool:
+		'''Reload the certificate chain if it has expired.
+
+		:return: True if a newer certificate chain is loaded, False otherwise.
+		'''
+		if self._certChainPath is None:
+			self._logger.error(
+				'The certificate chain path is not set. Cannot reload the certificate chain.'
+			)
+			return False
+
+		if self.HasCertExpired():
+			self._logger.info(
+				'The certificate has expired, reloading the certificate chain.'
+			)
+			self.LoadCertChainFiles(
+				certChainPath=self._certChainPath,
+				privKeyPath=self._privKeyPath,
+				password=self._password,
+			)
+			if self.HasCertExpired():
+				self._logger.error(
+					'Failed to reload the certificate chain. The certificate is still expired.'
+				)
+				return False
+			self._logger.info(
+				'A newer certificate chain has been loaded successfully.'
+			)
+
+		return True
 

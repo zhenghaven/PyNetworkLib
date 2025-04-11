@@ -15,6 +15,7 @@ from ...TLS.SSLContext import SSLContext
 from ..HTTP.DownstreamHandlerBase import DownstreamHandlerBase
 from ..HTTP.Server import PyServer as HTTPPyServer
 from ..PySocketServer import FromPySocketServer
+from ..TLS.ListenSocket import ListenSocket as TLSListenSocket
 
 
 class PyServer(HTTPPyServer):
@@ -37,10 +38,9 @@ class PyServer(HTTPPyServer):
 		)
 
 		self._sslCtx = sslContext
-		self.socket = self._sslCtx.WrapSocket(
+		self.socket = TLSListenSocket(
 			sock=self.socket,
-			server_side=True,
-			do_handshake_on_connect=True,
+			sslContext=self._sslCtx,
 		)
 
 
