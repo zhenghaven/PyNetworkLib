@@ -15,6 +15,7 @@ from .Server.HTTP.Utils.TestHandlerState import TestHandlerState
 from .Server.HTTP.TestServer import TestServer as TestHTTPServer
 from .Server.HTTP.Auth.TestConcurrentLimiter import TestConcurrentLimiter
 from .Server.HTTP.Auth.TestRateLimiter import TestRateLimiter
+from .Server.HTTP.HandlerByPath.TestHandlerByPath import TestHandlerByPath
 
 from .Server.HTTPS.TestServer import TestServer as TestHTTPSServer
 from .Server.HTTPS.Auth.TestTls import TestTls

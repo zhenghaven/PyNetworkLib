@@ -14,22 +14,6 @@ import json
 
 class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 
-	def __init__(
-		self,
-		*args,
-		**kwargs,
-	):
-		super().__init__(*args, **kwargs)
-
-		self._headers: dict[str, list[str]] = {}
-		self._body: bytes | None = None
-
-		# when the status code is not set properly, it will be default to 500
-		# to indicate an internal server error.
-		self._statusCode: int = 500
-
-		self._wasResponseSent: bool = False
-
 	def AddHeader(self, key: str, value: str) -> None:
 		'''
 		Set the header for the response.
@@ -188,4 +172,19 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 			self.wfile.write(self.body)
 
 		self._wasResponseSent = True
+
+	def SetRequestQuery(self, query: str) -> None:
+		'''
+		Set the request query string that was received in request.
+		'''
+		self._requestQuery = query
+
+	def GetRequestQuery(self) -> str:
+		'''
+		Get the request query string that was received in request.
+		'''
+		if not hasattr(self, '_requestQuery'):
+			self._requestQuery = ''
+
+		return self._requestQuery
 

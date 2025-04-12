@@ -8,13 +8,14 @@
 ###
 
 
-import http.server
 import http
 import logging
+import urllib3.util
 
 from .PyHandlerBase import PyHandlerBase
 from .ServerBase import ServerBase
 from .Utils.HostField import ParseHostField
+from .Utils.ValidChars import VALID_CHARS_PATH_QUERY_SET
 
 
 class PreHandler(PyHandlerBase):
@@ -108,6 +109,15 @@ class PreHandler(PyHandlerBase):
 			*args,
 		)
 
+	@classmethod
+	def _HasInvalidCharInPath(cls, path: str) -> bool:
+		'''Check if there are invalid characters in the path.'''
+		for ch in path:
+			if ch not in VALID_CHARS_PATH_QUERY_SET:
+				return True
+
+		return False
+
 	def HandleOneRequest(self):
 		'''Handle a single HTTP request.
 
@@ -136,6 +146,11 @@ class PreHandler(PyHandlerBase):
 			defaultPort=self.server.server_address[1]
 		)
 
+		# check if the path is valid
+		if self._HasInvalidCharInPath(self.path):
+			self.send_error(http.HTTPStatus.BAD_REQUEST, 'Bad request')
+			return
+
 		self.server.handlerLogger.debug(
 			'Pass %s request to %s for %s to downstream handler',
 			self.command,
@@ -144,10 +159,14 @@ class PreHandler(PyHandlerBase):
 		)
 
 		try:
+			# parse path to separate the query string
+			parsedPath = urllib3.util.parse_url(self.path)
+			self.SetRequestQuery(parsedPath.query)
+
 			# let the downstream handler handle the request
 			self.server.downstreamHTTPHdlr.HandleRequest(
 				host=host,
-				relPath=self.path,
+				relPath=parsedPath.path,
 				pyHandler=self,
 				handlerState=self.server.handlerState,
 				reqState={},
