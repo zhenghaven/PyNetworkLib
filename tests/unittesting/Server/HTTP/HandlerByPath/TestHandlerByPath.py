@@ -8,8 +8,8 @@
 ###
 
 
-import threading
 import unittest
+import urllib.parse
 
 from http import HTTPStatus
 
@@ -47,10 +47,25 @@ def HandleHelloWorld(host, relPath, pyHandler, handlerState, reqState, terminate
 	# set the response code to 200 OK
 	pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'HelloWorld|{relPath}')
 
+@EndPointHandler
+def HandleHelloQuery(host, relPath, pyHandler, handlerState, reqState, terminateEvent):
+	query = pyHandler.GetRequestQuery()
+	try:
+		qDict = urllib.parse.parse_qs(query, strict_parsing=True, errors='strict', max_num_fields=10)
+		v = qDict['key'][0]
+		# set the response code to 200 OK
+		pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'HelloQuery|{relPath}|{v}')
+	except ValueError as e:
+		# set the response code to 400 Bad Request
+		pyHandler.SetCodeAndTextMessage(HTTPStatus.BAD_REQUEST, f'BadRequest|{relPath}')
+		return
+
+
 WORLD_HANDLER = HandlerByPathMap({
 	'': { 'GET': HandleHelloEmpty },
 	'/': { 'GET': HandleHello },
 	'/World': { 'POST': HandleHelloWorld },
+	'/Query': { 'GET': HandleHelloQuery },
 })
 
 ROOT_HANDLER = HandlerByPathMap({
@@ -136,6 +151,14 @@ class TestHandlerByPath(unittest.TestCase):
 			)
 			self.assertEqual(resp.status_code, 200)
 			self.assertEqual(resp.text, 'HelloWorld|')
+
+			# send get /Hello/Query?key=123
+			resp = session.get(
+				url=f'http://[{serverAddr[0]}]:{serverAddr[1]}/Hello/Query?key=123',
+				timeout=5,
+			)
+			self.assertEqual(resp.status_code, 200)
+			self.assertEqual(resp.text, 'HelloQuery||123')
 
 
 			# some 404 cases
