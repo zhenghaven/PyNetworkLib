@@ -13,7 +13,7 @@ import threading
 from ..DownstreamHandlerBase import DownstreamHandlerBase
 from ..Utils.HandlerState import HandlerState
 from ..Utils.HostField import HOST_FIELD_TYPES
-from ..PyHandlerBase import PyHandlerBase
+from ..PreHandler import PreHandler
 from .Types import HANDLER_FUNCTION_TYPE
 
 
@@ -35,7 +35,7 @@ class HandlerByPath(DownstreamHandlerBase):
 		self,
 		host: HOST_FIELD_TYPES,
 		relPath: str,
-		pyHandler: PyHandlerBase,
+		pyHandler: PreHandler,
 		handlerState: HandlerState,
 		reqState: dict,
 		terminateEvent: threading.Event,

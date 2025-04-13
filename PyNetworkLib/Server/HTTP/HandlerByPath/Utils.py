@@ -13,7 +13,7 @@ import threading
 from ..Utils.HandlerState import HandlerState
 from ..Utils.HostField import HOST_FIELD_TYPES
 from ..Utils.ValidChars import VALID_CHARS_PATH
-from ..PyHandlerBase import PyHandlerBase
+from ..PreHandler import PreHandler
 from .Types import HANDLER_FUNCTION_TYPE, PATH_MAP_TYPE
 
 
@@ -64,7 +64,7 @@ def HandlerByPathMap(pathMap: PATH_MAP_TYPE) -> HANDLER_FUNCTION_TYPE:
 	def HandlerByPathInner(
 		host: HOST_FIELD_TYPES,
 		relPath: str,
-		pyHandler: PyHandlerBase,
+		pyHandler: PreHandler,
 		handlerState: HandlerState,
 		reqState: dict,
 		terminateEvent: threading.Event,
@@ -81,12 +81,14 @@ def HandlerByPathMap(pathMap: PATH_MAP_TYPE) -> HANDLER_FUNCTION_TYPE:
 			thisLevelPath, nextLevelPath = _SplitThisAndNextLevelPath(relPath)
 		except InvalidPathError as e:
 			# if the path is not valid, return a 404 error
+			pyHandler.LogDebug('Failed to parse path: %s', e)
 			pyHandler.SetCodeAndTextMessage(404, 'Not Found')
 			return
 
 		methodHdlrMap = pathMap.get(thisLevelPath, None)
 		if methodHdlrMap is None:
 			# if the path is not found, return a 404 error
+			pyHandler.LogDebug('Path not found: %s', thisLevelPath)
 			pyHandler.SetCodeAndTextMessage(404, 'Not Found')
 			return
 
@@ -94,8 +96,15 @@ def HandlerByPathMap(pathMap: PATH_MAP_TYPE) -> HANDLER_FUNCTION_TYPE:
 		handler = methodHdlrMap.get(method, None)
 		if handler is None:
 			# if the method is not found, return a 404 error
+			pyHandler.LogDebug('Method not found: %s', method)
 			pyHandler.SetCodeAndTextMessage(404, 'Not Found')
 			return
+
+		pyHandler.LogDebug(
+			'Calling the handler function for relative path %s method %s',
+			thisLevelPath,
+			method,
+		)
 
 		# call the handler function
 		handler(
@@ -118,7 +127,7 @@ def EndPointHandler(handler: HANDLER_FUNCTION_TYPE) -> HANDLER_FUNCTION_TYPE:
 	def EndPointHandlerInner(
 		host: HOST_FIELD_TYPES,
 		relPath: str,
-		pyHandler: PyHandlerBase,
+		pyHandler: PreHandler,
 		handlerState: HandlerState,
 		reqState: dict,
 		terminateEvent: threading.Event,
@@ -135,6 +144,7 @@ def EndPointHandler(handler: HANDLER_FUNCTION_TYPE) -> HANDLER_FUNCTION_TYPE:
 			return
 
 		# if the `relPath` is not empty, return a 404 error
+		pyHandler.LogDebug('Expected empty relative path but received %s', relPath)
 		pyHandler.SetCodeAndTextMessage(404, 'Not Found')
 
 	return EndPointHandlerInner

@@ -10,6 +10,8 @@
 
 import http
 import logging
+import selectors
+
 import urllib3.util
 
 from .PyHandlerBase import PyHandlerBase
@@ -18,10 +20,44 @@ from .Utils.HostField import ParseHostField
 from .Utils.ValidChars import VALID_CHARS_PATH_QUERY_SET
 
 
+# poll/select have the advantage of not requiring any extra file descriptor,
+# contrarily to epoll/kqueue (also, they require a single syscall).
+if hasattr(selectors, 'PollSelector'):
+	_ServerSelector = selectors.PollSelector
+else:
+	_ServerSelector = selectors.SelectSelector
+
+
 class PreHandler(PyHandlerBase):
 
 	# The server object that manages this handler.
 	server: ServerBase
+
+	def _RFileReadline(self, size: int, pollInterval: float = 0.5) -> bytes:
+		with _ServerSelector() as selector:
+			selector.register(self.rfile, selectors.EVENT_READ)
+
+			try:
+				while not self.server.terminateEvent.is_set():
+					for key, events in selector.select(pollInterval):
+						if self.server.terminateEvent.is_set():
+							# the server is terminated
+							return b''
+
+						if key.fileobj == self.rfile:
+							# client sent some data
+							data = self.rfile.readline(size)
+							return data
+						else:
+							# the fileobj has to be the one we registered
+							# so, this case should not be reachable
+							self.log_error('selector returned an unknown file object')
+							raise ValueError('Unknown file object')
+			except Exception as e:
+				# some error happened, the connection is unusable
+				# return empty string to indicate closing connection
+				self.LogDebug('Exception in _RFileReadline: %s', e)
+				return b''
 
 	def handle_one_request(self):
 		'''Handle a single HTTP request.
@@ -34,7 +70,7 @@ class PreHandler(PyHandlerBase):
 		'''
 
 		try:
-			self.raw_requestline = self.rfile.readline(65537)
+			self.raw_requestline = self._RFileReadline(65537)
 			if len(self.raw_requestline) > 65536:
 				self.requestline = ''
 				self.request_version = ''
@@ -61,7 +97,7 @@ class PreHandler(PyHandlerBase):
 			'''
 			# MODIFICATION: instead of looking for the method and then calling it
 			# we just call HandleOneRequest directly.
-			self.HandleOneRequest()
+			self._HandleOneRequest()
 
 			# MODIFICATION: The rest remains the same
 			self.wfile.flush() #actually send the response if not already done.
@@ -70,6 +106,15 @@ class PreHandler(PyHandlerBase):
 			self.log_error("Request timed out: %r", e)
 			self.close_connection = True
 			return
+
+	def handle(self):
+		'''Handle multiple requests if necessary.'''
+		self.close_connection = True
+
+		self.handle_one_request()
+		while not self.close_connection:
+			self.ResetResponse()
+			self.handle_one_request()
 
 	def log_message(self, format, *args):
 		return self.LogMessageWithLevel(
@@ -118,7 +163,7 @@ class PreHandler(PyHandlerBase):
 
 		return False
 
-	def HandleOneRequest(self):
+	def _HandleOneRequest(self) -> None:
 		'''Handle a single HTTP request.
 
 		This is the main method that handles the request. It is called by
@@ -190,4 +235,7 @@ class PreHandler(PyHandlerBase):
 			and (not self.hasResponseSent)
 		):
 			self.DoResponse()
+
+		# print('### close_connection:', self.close_connection)
+		# print('### self.GetRequestKeepAlive():', self.GetRequestKeepAlive())
 

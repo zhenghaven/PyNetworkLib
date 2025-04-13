@@ -27,25 +27,30 @@ from PyNetworkLib.Server.HTTP.HandlerByPath.Utils import (
 def HandleEmpty(host, relPath, pyHandler, handlerState, reqState, terminateEvent):
 	# set the response code to 200 OK
 	pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'Empty|{relPath}')
+	pyHandler.AllowKeepAlive()
 
 @EndPointHandler
 def HandleSlash(host, relPath, pyHandler, handlerState, reqState, terminateEvent):
 	# set the response code to 200 OK
 	pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'Slash|{relPath}')
+	pyHandler.AllowKeepAlive()
 
 def HandleHello(host, relPath, pyHandler, handlerState, reqState, terminateEvent):
 	# set the response code to 200 OK
 	pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'Hello|{relPath}')
+	pyHandler.AllowKeepAlive()
 
 @EndPointHandler
 def HandleHelloEmpty(host, relPath, pyHandler, handlerState, reqState, terminateEvent):
 	# set the response code to 200 OK
 	pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'HelloEmpty|{relPath}')
+	pyHandler.AllowKeepAlive()
 
 @EndPointHandler
 def HandleHelloWorld(host, relPath, pyHandler, handlerState, reqState, terminateEvent):
 	# set the response code to 200 OK
 	pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'HelloWorld|{relPath}')
+	pyHandler.AllowKeepAlive()
 
 @EndPointHandler
 def HandleHelloQuery(host, relPath, pyHandler, handlerState, reqState, terminateEvent):
@@ -53,12 +58,14 @@ def HandleHelloQuery(host, relPath, pyHandler, handlerState, reqState, terminate
 	try:
 		qDict = urllib.parse.parse_qs(query, strict_parsing=True, errors='strict', max_num_fields=10)
 		v = qDict['key'][0]
-		# set the response code to 200 OK
-		pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'HelloQuery|{relPath}|{v}')
 	except ValueError as e:
 		# set the response code to 400 Bad Request
 		pyHandler.SetCodeAndTextMessage(HTTPStatus.BAD_REQUEST, f'BadRequest|{relPath}')
 		return
+
+	# set the response code to 200 OK
+	pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, f'HelloQuery|{relPath}|{v}')
+	pyHandler.AllowKeepAlive()
 
 
 WORLD_HANDLER = HandlerByPathMap({
@@ -87,7 +94,7 @@ class TestHandlerByPath(unittest.TestCase):
 	def tearDown(self):
 		pass
 
-	def test_Server_HTTP_HandlerByPath_HandlerByPath_01Path(self):
+	def test_Server_HTTP_HandlerByPath_HandlerByPath_01ValidPath(self):
 		# test the request and response of the ThreadingServer class
 
 		server = ThreadingServer(
@@ -159,10 +166,26 @@ class TestHandlerByPath(unittest.TestCase):
 			)
 			self.assertEqual(resp.status_code, 200)
 			self.assertEqual(resp.text, 'HelloQuery||123')
+		finally:
+			# terminate the server
+			server.Terminate()
 
+	def test_Server_HTTP_HandlerByPath_HandlerByPath_02InvalidPath(self):
+		# test the request and response of the ThreadingServer class
 
-			# some 404 cases
+		server = ThreadingServer(
+			server_address=('::1', 0),
+			downstreamHTTPHdlr=HandlerByPath(handlerFunc=ROOT_HANDLER),
+		)
 
+		try:
+			# start the server
+			server.ThreadedServeUntilTerminate()
+
+			# get the server address
+			serverAddr = ('::1', server.GetSrcPort())
+
+			session = requests.Session()
 
 			# send get /Hello/World/
 			resp = session.get(

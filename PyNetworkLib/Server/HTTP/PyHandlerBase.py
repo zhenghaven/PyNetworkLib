@@ -14,7 +14,7 @@ import json
 
 class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 
-	def AddHeader(self, key: str, value: str) -> None:
+	def AddResponseHeader(self, key: str, value: str) -> None:
 		'''
 		Set the header for the response.
 		'''
@@ -25,7 +25,7 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 			self._headers[key] = []
 		self._headers[key].append(value)
 
-	def SetBody(self, body: bytes) -> None:
+	def SetResponseBody(self, body: bytes) -> None:
 		'''
 		Set the body for the response.
 		'''
@@ -68,7 +68,7 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		return self._body
 
 	@property
-	def headerItems(self):
+	def respHeaderItems(self):
 		'''
 		Get the header.items() for the response.
 		'''
@@ -77,7 +77,7 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 
 		return self._headers.items()
 
-	def GetHeader(self, key: str) -> list[str] | None:
+	def GetResponseHeader(self, key: str) -> list[str] | None:
 		'''
 		Get the header for the response.
 		'''
@@ -87,7 +87,7 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		res = self._headers.get(key, None)
 		return res.copy() if res is not None else None
 
-	def SetHeader(self, key: str, values: list[str]) -> None:
+	def SetResponseHeader(self, key: str, values: list[str]) -> None:
 		'''
 		Update the header for the response.
 		'''
@@ -96,7 +96,7 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 
 		self._headers[key] = values.copy()
 
-	def ResetHeaders(self) -> None:
+	def ResetResponseHeaders(self) -> None:
 		'''
 		Reset the headers for the response.
 		'''
@@ -105,19 +105,20 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 
 		self._headers.clear()
 
-	def ResetBody(self) -> None:
+	def ResetResponseBody(self) -> None:
 		'''
 		Reset the body for the response.
 		'''
 		self._body = None
 
-	def Reset(self) -> None:
+	def ResetResponse(self) -> None:
 		'''
 		Reset the response.
 		'''
-		self.ResetHeaders()
-		self.ResetBody()
+		self.ResetResponseHeaders()
+		self.ResetResponseBody()
 		self.SetStatusCode(500)
+		self._wasResponseSent = False
 
 	def SetJSONBodyFromDict(
 		self,
@@ -128,9 +129,9 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		'''
 		Set the body for the response as a JSON string.
 		'''
-		self.SetBody(json.dumps(data, indent=indent).encode('utf-8'))
-		self.AddHeader('Content-Type', 'application/json')
-		self.AddHeader('Content-Length', str(len(self._body)))
+		self.SetResponseBody(json.dumps(data, indent=indent).encode('utf-8'))
+		self.AddResponseHeader('Content-Type', 'application/json')
+		self.AddResponseHeader('Content-Length', str(len(self._body)))
 
 		if statusCode is not None:
 			self.SetStatusCode(statusCode)
@@ -145,9 +146,9 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		'''
 		self.SetStatusCode(code)
 
-		self.SetBody(message.encode('utf-8', 'replace'))
-		self.AddHeader('Content-Length', str(len(self._body)))
-		self.AddHeader('Content-Type', 'text/plain')
+		self.SetResponseBody(message.encode('utf-8', 'replace'))
+		self.AddResponseHeader('Content-Length', str(len(self._body)))
+		self.AddResponseHeader('Content-Type', 'text/plain')
 
 	def DoResponse(self) -> None:
 		'''
@@ -162,7 +163,7 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		self.send_response_only(self.statusCode)
 
 		# set the headers
-		for key, values in self.headerItems:
+		for key, values in self.respHeaderItems:
 			for value in values:
 				self.send_header(key, value)
 		self.end_headers()
@@ -187,4 +188,25 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 			self._requestQuery = ''
 
 		return self._requestQuery
+
+	def GetRequestKeepAlive(self) -> bool:
+		'''
+		Get the request keep-alive value from the request header.
+		'''
+		keepAlive = self.headers.get('Connection', None)
+		if (keepAlive is None) or (not isinstance(keepAlive, str)):
+			# the header is not set or not a string
+			return False
+
+		keepAlive = keepAlive.lower()
+		if keepAlive == 'keep-alive':
+			return True
+
+		# all other values are not keep-alive (i.e., close)
+		return False
+
+	def AllowKeepAlive(self) -> None:
+		'''Allow to keep the connection alive if keep-alive is requested.'''
+		if self.GetRequestKeepAlive():
+			self.AddResponseHeader('Connection', 'keep-alive')
 
