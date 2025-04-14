@@ -11,6 +11,7 @@
 import http
 import logging
 import selectors
+import time
 
 import urllib3.util
 
@@ -33,12 +34,24 @@ class PreHandler(PyHandlerBase):
 	# The server object that manages this handler.
 	server: ServerBase
 
-	def _RFileReadline(self, size: int, pollInterval: float = 0.5) -> bytes:
+	def _RFileReadline(
+		self,
+		size: int,
+		pollInterval: float = 0.5,
+		timeout: float = 2.0,
+	) -> bytes:
+		startTime = time.time()
+
 		with _ServerSelector() as selector:
 			selector.register(self.rfile, selectors.EVENT_READ)
 
 			try:
 				while not self.server.terminateEvent.is_set():
+					if (time.time() - startTime) > timeout:
+						# close the connection if the client has not sending
+						# any data before the timeout
+						return b''
+
 					for key, events in selector.select(pollInterval):
 						if self.server.terminateEvent.is_set():
 							# the server is terminated
