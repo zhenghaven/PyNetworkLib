@@ -15,14 +15,23 @@ import secrets
 import socket
 import ssl
 
-from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
+from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes, PublicKeyTypes
 from cryptography.hazmat.primitives.serialization import (
 	Encoding,
 	PrivateFormat,
+	PublicFormat,
 	BestAvailableEncryption,
 	load_pem_private_key,
 )
 from cryptography.x509.base import Certificate, load_pem_x509_certificates
+
+
+def PubKeyToRawBytes(pubKey: PublicKeyTypes) -> bytes:
+	'''Convert the public key to raw bytes.'''
+	return pubKey.public_bytes(
+		encoding = Encoding.DER,
+		format   = PublicFormat.SubjectPublicKeyInfo,
+	)
 
 
 class SSLContext:
@@ -222,7 +231,8 @@ class SSLContext:
 				raise ValueError('The certificate chain is not a list of certificates.')
 		if not isinstance(privKey, PrivateKeyTypes):
 			raise ValueError('The private key is not a valid private key.')
-		if privKey.public_key().public_bytes_raw() != certChain[0].public_key().public_bytes_raw():
+		if PubKeyToRawBytes(privKey.public_key()) != PubKeyToRawBytes(certChain[0].public_key()):
+		# if privKey.public_key().public_bytes_raw() != certChain[0].public_key().public_bytes_raw():
 			raise ValueError('The private key does not correspond to the first certificate in the chain.')
 
 		# generate a random file name

@@ -9,7 +9,6 @@
 
 
 import datetime
-# import logging
 import ssl
 import threading
 
@@ -25,11 +24,9 @@ from cryptography.x509 import (
 	NameOID as x509NameOID,
 	SubjectAlternativeName as x509SubjectAlternativeName,
 )
-from cryptography.hazmat.primitives.serialization import (
-	Encoding,
-	PublicFormat,
-)
+from cryptography.hazmat.primitives.serialization import Encoding
 
+from ....TLS.SSLContext import PubKeyToRawBytes
 from ...HTTP.DownstreamHandlerBase import DownstreamHandlerBase
 from ...HTTP.PreHandler import PreHandler
 from ...HTTP.Utils.HandlerState import HandlerState
@@ -63,17 +60,6 @@ class TLS(DownstreamHandlerBase):
 		self._downstreamHTTPHdlr = downstreamHTTPHdlr
 
 	@classmethod
-	def _PubKeyToRawBytes(
-		cls,
-		pubKey: PublicKeyTypes,
-	) -> bytes:
-		'''Convert the public key to raw bytes.'''
-		return pubKey.public_bytes(
-			encoding = Encoding.DER,
-			format   = PublicFormat.SubjectPublicKeyInfo,
-		)
-
-	@classmethod
 	def _FindRootCaCert(
 		cls,
 		certChain: list[Certificate],
@@ -88,7 +74,7 @@ class TLS(DownstreamHandlerBase):
 			'''Check if the trusted certificate is the CA certificate of the given chain.'''
 			# search from the end of the chain
 			for cert in reversed(certChain):
-				if cls._PubKeyToRawBytes(cert.public_key()) == cls._PubKeyToRawBytes(trustedCert.public_key()):
+				if PubKeyToRawBytes(cert.public_key()) == PubKeyToRawBytes(trustedCert.public_key()):
 				# if cert.subject == trustedCert.subject:
 					# found the CA certificate in the chain
 					return True
@@ -179,7 +165,7 @@ class TLS(DownstreamHandlerBase):
 		for revI in reversed(range(len(remainingCertChain))):
 			cert = remainingCertChain[revI]
 			# case 1: trusted cert is in the chain
-			if cls._PubKeyToRawBytes(cert.public_key()) == cls._PubKeyToRawBytes(trustedCert.public_key()):
+			if PubKeyToRawBytes(cert.public_key()) == PubKeyToRawBytes(trustedCert.public_key()):
 			# if cert.subject == trustedCert.subject:
 				# found the trusted cert in the chain
 				# remove the trusted cert from the chain
