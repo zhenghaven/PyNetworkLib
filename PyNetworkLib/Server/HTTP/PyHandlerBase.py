@@ -211,3 +211,50 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		if self.GetRequestKeepAlive():
 			self.AddResponseHeader('Connection', 'keep-alive')
 
+	def ReadRequestBody(self, contentLength: int) -> bytes:
+		content = b''
+		while len(content) < contentLength:
+			# read the content from the request
+			tmpContent = self.rfile.read(contentLength - len(content))
+			if len(tmpContent) == 0:
+				raise ValueError('Read content approached EOF while contentLength not reached')
+			content += tmpContent
+
+		return content
+
+	def AssertRequestContentType(self, expContentType: str) -> None:
+		'''Assert the request Content-Type header.'''
+		contentType = self.headers.get('Content-Type', None)
+		if (
+			(contentType is None)
+			or (not isinstance(contentType, str))
+			or (contentType.lower() != 'application/json')
+		):
+			raise ValueError('Content-Type is not application/json')
+
+	def GetRequestContentLength(self) -> int:
+		'''Get the request Content-Length header.'''
+		contentLength = self.headers.get('Content-Length', None)
+		if (
+			(contentLength is None)
+			or (not isinstance(contentLength, str))
+			or (not contentLength.isdigit())
+		):
+			raise ValueError('Content-Length is not a valid number')
+		contentLength = int(contentLength)
+		return contentLength
+
+	def GetRequestJSON(self) -> dict:
+		'''Get the request body as a JSON string.'''
+		self.AssertRequestContentType('application/json')
+
+		contentLength = self.GetRequestContentLength()
+
+		content = self.ReadRequestBody(contentLength)
+
+		try:
+			jsonData = json.loads(content.decode('utf-8'))
+			return jsonData
+		except Exception:
+			raise ValueError('Failed to decode JSON data')
+
