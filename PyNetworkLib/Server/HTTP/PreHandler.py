@@ -66,6 +66,9 @@ class PreHandler(PyHandlerBase):
 							# so, this case should not be reachable
 							self.log_error('selector returned an unknown file object')
 							raise ValueError('Unknown file object')
+
+				# terminateEvent is set
+				return b''
 			except Exception as e:
 				# some error happened, the connection is unusable
 				# return empty string to indicate closing connection

@@ -18,18 +18,18 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		'''
 		Set the header for the response.
 		'''
-		if not hasattr(self, '_headers'):
-			self._headers = {}
+		if not hasattr(self, '_respHeaders'):
+			self._respHeaders = {}
 
-		if key not in self._headers:
-			self._headers[key] = []
-		self._headers[key].append(value)
+		if key not in self._respHeaders:
+			self._respHeaders[key] = []
+		self._respHeaders[key].append(value)
 
 	def SetResponseBody(self, body: bytes) -> None:
 		'''
 		Set the body for the response.
 		'''
-		self._body = body
+		self._respBody = body
 
 	def SetStatusCode(self, code: int) -> None:
 		'''
@@ -62,54 +62,54 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		'''
 		Get the body for the response.
 		'''
-		if not hasattr(self, '_body'):
-			self._body = None
+		if not hasattr(self, '_respBody'):
+			self._respBody = None
 
-		return self._body
+		return self._respBody
 
 	@property
 	def respHeaderItems(self):
 		'''
 		Get the header.items() for the response.
 		'''
-		if not hasattr(self, '_headers'):
-			self._headers = {}
+		if not hasattr(self, '_respHeaders'):
+			self._respHeaders = {}
 
-		return self._headers.items()
+		return self._respHeaders.items()
 
 	def GetResponseHeader(self, key: str) -> list[str] | None:
 		'''
 		Get the header for the response.
 		'''
-		if not hasattr(self, '_headers'):
-			self._headers = {}
+		if not hasattr(self, '_respHeaders'):
+			self._respHeaders = {}
 
-		res = self._headers.get(key, None)
+		res = self._respHeaders.get(key, None)
 		return res.copy() if res is not None else None
 
 	def SetResponseHeader(self, key: str, values: list[str]) -> None:
 		'''
 		Update the header for the response.
 		'''
-		if not hasattr(self, '_headers'):
-			self._headers = {}
+		if not hasattr(self, '_respHeaders'):
+			self._respHeaders = {}
 
-		self._headers[key] = values.copy()
+		self._respHeaders[key] = values.copy()
 
 	def ResetResponseHeaders(self) -> None:
 		'''
 		Reset the headers for the response.
 		'''
-		if not hasattr(self, '_headers'):
-			self._headers = {}
+		if not hasattr(self, '_respHeaders'):
+			self._respHeaders = {}
 
-		self._headers.clear()
+		self._respHeaders.clear()
 
 	def ResetResponseBody(self) -> None:
 		'''
 		Reset the body for the response.
 		'''
-		self._body = None
+		self._respBody = None
 
 	def ResetResponse(self) -> None:
 		'''
@@ -131,7 +131,7 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		'''
 		self.SetResponseBody(json.dumps(data, indent=indent).encode('utf-8'))
 		self.AddResponseHeader('Content-Type', 'application/json')
-		self.AddResponseHeader('Content-Length', str(len(self._body)))
+		self.AddResponseHeader('Content-Length', str(len(self._respBody)))
 
 		if statusCode is not None:
 			self.SetStatusCode(statusCode)
@@ -147,7 +147,7 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		self.SetStatusCode(code)
 
 		self.SetResponseBody(message.encode('utf-8', 'replace'))
-		self.AddResponseHeader('Content-Length', str(len(self._body)))
+		self.AddResponseHeader('Content-Length', str(len(self._respBody)))
 		self.AddResponseHeader('Content-Type', 'text/plain')
 
 	def DoResponse(self) -> None:
@@ -156,21 +156,22 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		'''
 		self.log_request(
 			code=self.statusCode,
-			size=len(self.body) if self.body is not None else 0,
+			size=len(self._respBody) if self._respBody is not None else 0,
 		)
 
-		# set the response code
+		# send the response code
 		self.send_response_only(self.statusCode)
 
-		# set the headers
+		# send the headers
 		for key, values in self.respHeaderItems:
 			for value in values:
 				self.send_header(key, value)
 		self.end_headers()
 
-		# set the body
-		if self.body is not None:
-			self.wfile.write(self.body)
+		# send the body
+		if self._respBody is not None:
+			self.wfile.write(self._respBody)
+			# self.wfile.flush()
 
 		self._wasResponseSent = True
 
@@ -209,4 +210,51 @@ class PyHandlerBase(http.server.BaseHTTPRequestHandler):
 		'''Allow to keep the connection alive if keep-alive is requested.'''
 		if self.GetRequestKeepAlive():
 			self.AddResponseHeader('Connection', 'keep-alive')
+
+	def ReadRequestBody(self, contentLength: int) -> bytes:
+		content = b''
+		while len(content) < contentLength:
+			# read the content from the request
+			tmpContent = self.rfile.read(contentLength - len(content))
+			if len(tmpContent) == 0:
+				raise ValueError('Read content approached EOF while contentLength not reached')
+			content += tmpContent
+
+		return content
+
+	def AssertRequestContentType(self, expContentType: str) -> None:
+		'''Assert the request Content-Type header.'''
+		contentType = self.headers.get('Content-Type', None)
+		if (
+			(contentType is None)
+			or (not isinstance(contentType, str))
+			or (contentType.lower() != 'application/json')
+		):
+			raise ValueError('Content-Type is not application/json')
+
+	def GetRequestContentLength(self) -> int:
+		'''Get the request Content-Length header.'''
+		contentLength = self.headers.get('Content-Length', None)
+		if (
+			(contentLength is None)
+			or (not isinstance(contentLength, str))
+			or (not contentLength.isdigit())
+		):
+			raise ValueError('Content-Length is not a valid number')
+		contentLength = int(contentLength)
+		return contentLength
+
+	def GetRequestJSON(self) -> dict:
+		'''Get the request body as a JSON string.'''
+		self.AssertRequestContentType('application/json')
+
+		contentLength = self.GetRequestContentLength()
+
+		content = self.ReadRequestBody(contentLength)
+
+		try:
+			jsonData = json.loads(content.decode('utf-8'))
+			return jsonData
+		except Exception:
+			raise ValueError('Failed to decode JSON data')
 

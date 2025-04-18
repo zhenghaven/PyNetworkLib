@@ -40,6 +40,36 @@ class HappyDownstreamHandler(DownstreamHandlerBase):
 		pyHandler.SetCodeAndTextMessage(HTTPStatus.OK, 'OK')
 
 
+class JSONDownstreamHandler(DownstreamHandlerBase):
+	'''A downstream handler that expects a JSON request body and
+	responds with a JSON response.
+	'''
+
+	def HandleRequest(
+		self,
+		host: HOST_FIELD_TYPES,
+		relPath: str,
+		pyHandler: PyHandlerBase,
+		handlerState: HandlerState,
+		reqState: dict,
+		terminateEvent: threading.Event,
+	) -> None:
+		'''Handle the request.'''
+		try:
+			# get the request body
+			body = pyHandler.GetRequestJSON()
+		except Exception as e:
+			pyHandler.log_error(
+				'Failed to parse JSON request body: %s',
+				str(e),
+			)
+			# set the response code to 400 Bad Request
+			pyHandler.SetCodeAndTextMessage(HTTPStatus.BAD_REQUEST, 'Bad Request')
+		else:
+			# echo the request body back to the client with a 200 OK response
+			pyHandler.SetJSONBodyFromDict(body, indent='\t', statusCode=HTTPStatus.OK)
+
+
 class TestServer(unittest.TestCase):
 
 	def setUp(self):
@@ -119,6 +149,41 @@ class TestServer(unittest.TestCase):
 			# check the response
 			self.assertEqual(resp.status_code, 400)
 			self.assertNotEqual(resp.text.find('Bad request'), -1)
+		finally:
+			# terminate the server
+			server.Terminate()
+
+	def test_Server_HTTP_Server_04JSON(self):
+		# test the request and response of the ThreadingServer class
+		server = ThreadingServer(
+			server_address=('::1', 0),
+			downstreamHTTPHdlr=JSONDownstreamHandler(),
+		)
+
+		try:
+			# start the server
+			server.ThreadedServeUntilTerminate()
+
+			# get the server address
+			serverAddr = ('::1', server.GetSrcPort())
+
+			reqBody = {
+				'key1': 'value1',
+				'key2': 'value2',
+			}
+
+			# send a request to the server
+			session = requests.Session()
+			resp = session.post(
+				url=f'http://[{serverAddr[0]}]:{serverAddr[1]}/',
+				json=reqBody,
+				timeout=5,
+			)
+
+			# check the response
+			self.assertEqual(resp.status_code, 200)
+			respBody = resp.json()
+			self.assertEqual(respBody, reqBody)
 		finally:
 			# terminate the server
 			server.Terminate()
