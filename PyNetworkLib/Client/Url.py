@@ -54,6 +54,7 @@ def GenHTTPUrlPrefix(
 		ip=ip,
 	)
 
+
 def GenHTTPSUrlPrefix(
 	*,
 	port: int | None = None,
