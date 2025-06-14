@@ -10,9 +10,9 @@
 
 import threading
 
+from ...Utils.HandlerState import HandlerState
 from ..DownstreamHandlerBase import DownstreamHandlerBase
 from ..PreHandler import PreHandler
-from ..Utils.HandlerState import HandlerState
 from ..Utils.HostField import HOST_FIELD_TYPES
 
 

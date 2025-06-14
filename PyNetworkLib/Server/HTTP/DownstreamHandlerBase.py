@@ -10,8 +10,8 @@
 
 import threading
 
+from ..Utils.HandlerState import HandlerState
 from .PyHandlerBase import PyHandlerBase
-from .Utils.HandlerState import HandlerState
 from .Utils.HostField import HOST_FIELD_TYPES
 
 

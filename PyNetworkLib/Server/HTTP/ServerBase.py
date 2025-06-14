@@ -12,8 +12,8 @@ import http.server
 import logging
 import threading
 
+from ..Utils.HandlerState import HandlerState
 from .DownstreamHandlerBase import DownstreamHandlerBase
-from .Utils.HandlerState import HandlerState
 
 
 class ServerBase(http.server.HTTPServer):

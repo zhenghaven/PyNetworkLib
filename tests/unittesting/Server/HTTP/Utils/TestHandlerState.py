@@ -10,7 +10,7 @@
 
 import unittest
 
-from PyNetworkLib.Server.HTTP.Utils.HandlerState import HandlerState
+from PyNetworkLib.Server.Utils.HandlerState import HandlerState
 
 
 class TestHandlerState(unittest.TestCase):

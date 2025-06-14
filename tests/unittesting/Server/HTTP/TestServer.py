@@ -18,8 +18,8 @@ import requests
 from PyNetworkLib.Server.HTTP.DownstreamHandlerBase import DownstreamHandlerBase
 from PyNetworkLib.Server.HTTP.PyHandlerBase import PyHandlerBase
 from PyNetworkLib.Server.HTTP.Server import ThreadingServer
-from PyNetworkLib.Server.HTTP.Utils.HandlerState import HandlerState
 from PyNetworkLib.Server.HTTP.Utils.HostField import HOST_FIELD_TYPES
+from PyNetworkLib.Server.Utils.HandlerState import HandlerState
 
 
 class HappyDownstreamHandler(DownstreamHandlerBase):
