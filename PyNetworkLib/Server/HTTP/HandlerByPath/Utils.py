@@ -10,7 +10,7 @@
 
 import threading
 
-from ..Utils.HandlerState import HandlerState
+from ...Utils.HandlerState import HandlerState
 from ..Utils.HostField import HOST_FIELD_TYPES
 from ..Utils.ValidChars import VALID_CHARS_PATH
 from ..PreHandler import PreHandler

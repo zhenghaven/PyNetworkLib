@@ -8,7 +8,7 @@
 ###
 
 
-import http.server
+import socketserver
 import logging
 import threading
 
@@ -16,22 +16,19 @@ from ..Utils.HandlerState import HandlerState
 from .DownstreamHandlerBase import DownstreamHandlerBase
 
 
-class ServerBase(http.server.HTTPServer):
+class ServerBase(socketserver.TCPServer):
 	'''
-	The base class for all HTTP servers in this library.
+	The base class for all TCP servers in this library.
 	'''
 
-	# The downstream HTTP handler to be used by this server.
-	downstreamHTTPHdlr: DownstreamHandlerBase
-
-	# The list of commands that are enabled for this server.
-	enabledCommands: list[str]
-
-	# The logger to be used by the handlers of this server.  (created and managed by ../BaseServer.BaseServer)
-	handlerLogger: logging.Logger
+	# The downstream TCP handler to be used by this server.
+	downstreamTCPHdlr: DownstreamHandlerBase
 
 	# The state of the handler.
 	handlerState: HandlerState
+
+	# The logger to be used by the handlers of this server.  (created and managed by ../BaseServer.BaseServer)
+	handlerLogger: logging.Logger
 
 	# The event set when the server is terminated. (created and managed by ../BaseServer.BaseServer)
 	terminateEvent: threading.Event
@@ -43,18 +40,12 @@ class ServerBase(http.server.HTTPServer):
 		self,
 		server_address,
 		RequestHandlerClass,
-		downstreamHTTPHdlr: DownstreamHandlerBase,
-		enabledCommands: list[str] = ['GET', 'POST'],
+		downstreamTCPHdlr: DownstreamHandlerBase,
 		bind_and_activate = True,
 	):
 
 		# setting up the downstream handler to be used by this server
-		self.downstreamHTTPHdlr = downstreamHTTPHdlr
-
-		# setting up the list of enabled commands
-		self.enabledCommands = [
-			cmd.upper() for cmd in enabledCommands
-		]
+		self.downstreamTCPHdlr = downstreamTCPHdlr
 
 		# setting up the state of the handler
 		self.handlerState = HandlerState()

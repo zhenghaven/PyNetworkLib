@@ -29,8 +29,8 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from ....TLS.SSLContext import PubKeyToRawBytes
 from ...HTTP.DownstreamHandlerBase import DownstreamHandlerBase
 from ...HTTP.PreHandler import PreHandler
-from ...HTTP.Utils.HandlerState import HandlerState
 from ...HTTP.Utils.HostField import HOST_FIELD_TYPES
+from ...Utils.HandlerState import HandlerState
 
 
 class TLS(DownstreamHandlerBase):

@@ -12,7 +12,7 @@ import threading
 
 from typing import Callable
 
-from ..Utils.HandlerState import HandlerState
+from ...Utils.HandlerState import HandlerState
 from ..Utils.HostField import HOST_FIELD_TYPES
 from ..PyHandlerBase import PyHandlerBase
 

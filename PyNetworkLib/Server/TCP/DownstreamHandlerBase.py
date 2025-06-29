@@ -12,7 +12,6 @@ import threading
 
 from ..Utils.HandlerState import HandlerState
 from .PyHandlerBase import PyHandlerBase
-from .Utils.HostField import HOST_FIELD_TYPES
 
 
 class DownstreamHandlerBase:
@@ -27,8 +26,6 @@ class DownstreamHandlerBase:
 
 	def HandleRequest(
 		self,
-		host: HOST_FIELD_TYPES,
-		relPath: str,
 		pyHandler: PyHandlerBase,
 		handlerState: HandlerState,
 		reqState: dict,
@@ -36,10 +33,7 @@ class DownstreamHandlerBase:
 	) -> None:
 		'''Handle the request.
 
-		:param relPath: The relative path (without the domain/host name part)
-		of the request.
-		:param host: The host field parsed from the request header.
-		:param pyHandler: The HTTP request handler object.
+		:param pyHandler: The TCP request handler object.
 		:param handlerState: The state of the handler of a server shared by
 			all requests made to that server.
 		:param reqState: The state of the current request.
