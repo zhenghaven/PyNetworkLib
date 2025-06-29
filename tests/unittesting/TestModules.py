@@ -22,3 +22,6 @@ from .Server.HTTPS.TestServer import TestServer as TestHTTPSServer
 from .Server.HTTPS.Auth.TestTls import TestTls
 from .Server.HTTPS.Auth.TestTotpToken import TestTotpToken
 
+from .Server.TCP.TestServer import TestServer as TestTCPServer
+from .Server.TLS.TestServer import TestServer as TestTLSServer
+
