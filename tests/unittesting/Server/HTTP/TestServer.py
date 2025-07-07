@@ -19,6 +19,7 @@ from PyNetworkLib.Server.HTTP.DownstreamHandlerBase import DownstreamHandlerBase
 from PyNetworkLib.Server.HTTP.PyHandlerBase import PyHandlerBase
 from PyNetworkLib.Server.HTTP.Server import ThreadingServer
 from PyNetworkLib.Server.HTTP.Utils.HostField import HOST_FIELD_TYPES
+from PyNetworkLib.Server.Utils.DownstreamHandlerBlockByRate import DownstreamHandlerBlockByRate
 from PyNetworkLib.Server.Utils.HandlerState import HandlerState
 
 
@@ -87,10 +88,18 @@ class TestServer(unittest.TestCase):
 		server.Terminate()
 
 	def test_Server_HTTP_Server_02ReqAndResp(self):
+		# test using DownstreamHandlerBlockByRate
+		dowmHdlr = DownstreamHandlerBlockByRate(
+			maxNumRequests=10,
+			timeWindowSec=10.0,
+			downstreamHandler=HappyDownstreamHandler(),
+			savedStatePath=None,
+		)
+
 		# test the request and response of the ThreadingServer class
 		server = ThreadingServer(
 			server_address=('::1', 0),
-			downstreamHTTPHdlr=HappyDownstreamHandler(),
+			downstreamHTTPHdlr=dowmHdlr,
 		)
 
 		try:

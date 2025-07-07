@@ -15,8 +15,9 @@ import unittest
 
 from PyNetworkLib.Server.TCP.DownstreamHandlerBase import DownstreamHandlerBase
 from PyNetworkLib.Server.TCP.PyHandlerBase import PyHandlerBase
-from PyNetworkLib.Server.Utils.HandlerState import HandlerState
 from PyNetworkLib.Server.TCP.Server import ThreadingServer
+from PyNetworkLib.Server.Utils.DownstreamHandlerBlockByRate import DownstreamHandlerBlockByRate
+from PyNetworkLib.Server.Utils.HandlerState import HandlerState
 
 
 class EchoTCPHandler(DownstreamHandlerBase):
@@ -54,10 +55,17 @@ class TestServer(unittest.TestCase):
 		server.Terminate()
 
 	def test_Server_TCP_Server_02ReqAndResp(self):
+		# test using DownstreamHandlerBlockByRate
+		dowmHdlr = DownstreamHandlerBlockByRate(
+			maxNumRequests=10,
+			timeWindowSec=10.0,
+			downstreamHandler=EchoTCPHandler(),
+			savedStatePath=None,
+		)
 		# test the request and response of the ThreadingServer class
 		server = ThreadingServer(
 			server_address=('::1', 0),
-			downstreamTCPHdlr=EchoTCPHandler(),
+			downstreamTCPHdlr=dowmHdlr,
 		)
 
 		try:

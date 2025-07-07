@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509 import load_pem_x509_certificates
 
 from PyNetworkLib.Server.TLS.Server import ThreadingServer
+from PyNetworkLib.Server.Utils.DownstreamHandlerBlockByRate import DownstreamHandlerBlockByRate
 from PyNetworkLib.TLS.SSLContext import SSLContext
 
 from ..TCP.TestServer import EchoTCPHandler
@@ -105,10 +106,18 @@ class TestServer(unittest.TestCase):
 		server.Terminate()
 
 	def test_Server_TLS_Server_02ReqAndResp(self):
+		# test using DownstreamHandlerBlockByRate
+		dowmHdlr = DownstreamHandlerBlockByRate(
+			maxNumRequests=10,
+			timeWindowSec=10.0,
+			downstreamHandler=EchoTCPHandler(),
+			savedStatePath=os.path.join(TMP_DIR, 'testBlockByRateState.json'),
+		)
+
 		# test the request and response of the ThreadingServer class
 		server = ThreadingServer(
 			server_address=('::1', 0),
-			downstreamTCPHdlr=EchoTCPHandler(),
+			downstreamTCPHdlr=dowmHdlr,
 			sslContext=self._sslCtx,
 		)
 

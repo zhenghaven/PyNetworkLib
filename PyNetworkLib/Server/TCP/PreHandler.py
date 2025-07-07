@@ -24,8 +24,15 @@ class PreHandler(PyHandlerBase):
 		self.server.handlerLogger.debug(f'Setting up handler for {self.cltAddrStr}')
 
 	def handle(self):
+		# get ip address of the client
+		clientIP = str(self.client_address[0])
+		clientPort = int(self.client_address[1])
+
 		try:
-			reqState = {}
+			reqState = {
+				'clientIP': clientIP,
+				'clientPort': clientPort,
+			}
 			self.server.downstreamTCPHdlr.HandleRequest(
 				pyHandler=self,
 				handlerState=self.server.handlerState,
