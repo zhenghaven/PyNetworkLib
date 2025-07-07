@@ -18,6 +18,7 @@ from cryptography.x509 import load_pem_x509_certificates
 
 from PyNetworkLib.Client.HTTPS.HTTPSAdapters import HTTPSAdapter
 from PyNetworkLib.Server.HTTPS.Server import ThreadingServer
+from PyNetworkLib.Server.Utils.DownstreamHandlerBlockByRate import DownstreamHandlerBlockByRate
 from PyNetworkLib.TLS.SSLContext import SSLContext
 
 from ..HTTP.TestServer import HappyDownstreamHandler
@@ -98,10 +99,18 @@ class TestServer(unittest.TestCase):
 		server.Terminate()
 
 	def test_Server_HTTPS_Server_02ReqAndResp(self):
+		# test using DownstreamHandlerBlockByRate
+		dowmHdlr = DownstreamHandlerBlockByRate(
+			maxNumRequests=10,
+			timeWindowSec=10.0,
+			downstreamHandler=HappyDownstreamHandler(),
+			savedStatePath=os.path.join(TMP_DIR, 'testBlockByRateState.json'),
+		)
+
 		# test the request and response of the ThreadingServer class
 		server = ThreadingServer(
 			server_address=('::1', 0),
-			downstreamHTTPHdlr=HappyDownstreamHandler(),
+			downstreamHTTPHdlr=dowmHdlr,
 			sslContext=self._sslCtx,
 		)
 

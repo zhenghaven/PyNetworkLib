@@ -26,6 +26,7 @@ class DownstreamHandlerBase:
 
 	def HandleRequest(
 		self,
+		*, # required that all parameters are keyword-only
 		pyHandler: PyHandlerBase,
 		handlerState: HandlerState,
 		reqState: dict,

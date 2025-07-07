@@ -27,6 +27,7 @@ class DownstreamHandlerBase:
 
 	def HandleRequest(
 		self,
+		*, # required that all parameters are keyword-only
 		host: HOST_FIELD_TYPES,
 		relPath: str,
 		pyHandler: PyHandlerBase,

@@ -219,6 +219,15 @@ class PreHandler(PyHandlerBase):
 			self.path,
 		)
 
+		# get ip address of the client
+		clientIP = str(self.client_address[0])
+		clientPort = int(self.client_address[1])
+
+		reqState = {
+			'clientIP': clientIP,
+			'clientPort': clientPort,
+		}
+
 		try:
 			# parse path to separate the query string
 			parsedPath = urllib3.util.parse_url(self.path)
@@ -230,7 +239,7 @@ class PreHandler(PyHandlerBase):
 				relPath=parsedPath.path,
 				pyHandler=self,
 				handlerState=self.server.handlerState,
-				reqState={},
+				reqState=reqState,
 				terminateEvent=self.server.terminateEvent,
 			)
 		except Exception as e:
