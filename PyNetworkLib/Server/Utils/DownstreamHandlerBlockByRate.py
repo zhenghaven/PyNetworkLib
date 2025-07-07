@@ -229,9 +229,12 @@ class DownstreamHandlerBlockByRate:
 			return True
 
 		with self._blockedStateLock:
-			return self._blockedState.IsIpBlocked(ipObj=ipObj)
+			stateCheckRes = self._blockedState.IsIpBlocked(ipObj=ipObj)
 
+		# update the requester record before returning the result
 		self._CheckRequesterRecord(ipObj)
+
+		return stateCheckRes
 
 	def _CheckRequesterRecord(self, ipObj: IP_ADDRESS_TYPES) -> None:
 		'''
