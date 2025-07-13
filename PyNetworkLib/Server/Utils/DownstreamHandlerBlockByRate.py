@@ -27,7 +27,11 @@ class BlockedState:
 	A class to represent the blocked state of IP addresses and networks.
 	'''
 
-	def __init__(self, serializedState: dict = dict(), globalState: dict = dict()):
+	def __init__(
+		self,
+		serializedState: dict | None = None,
+		globalState: dict | None = None,
+	):
 		'''
 		Constructor for the BlockedState class.
 
@@ -65,6 +69,11 @@ class BlockedState:
 		'''
 		self._logger = logging.getLogger(f'{__name__}.{self.__class__.__name__}')
 
+		if serializedState is None:
+			serializedState = {}
+		if globalState is None:
+			globalState = {}
+
 		self._hosts = {}
 		serializedHosts = serializedState.get('hosts', [])
 		for host in serializedHosts:
@@ -76,6 +85,7 @@ class BlockedState:
 			self._hosts[ip] = {
 				'timestamp': float(timestamp),
 			}
+			self._logger.info('Loaded blocked host: %s @T=%f', ip, timestamp)
 
 		self._networks = {}
 		serializedNetworks = serializedState.get('networks', [])
@@ -84,6 +94,7 @@ class BlockedState:
 			assert 'net' in network, 'Network must contain a "net" key.'
 			net = ipaddress.ip_network(network['net'])
 			self._networks[net] = {}
+			self._logger.info('Loaded blocked network: %s', net)
 
 		# Load global networks from the global state
 		self._globalNetworks = {}
@@ -93,6 +104,7 @@ class BlockedState:
 			assert 'net' in network, 'Global network must contain a "net" key.'
 			net = ipaddress.ip_network(network['net'])
 			self._globalNetworks[net] = {}
+			self._logger.info('Loaded globally blocked network: %s', net)
 
 	def IsIpBlocked(self, ipObj: IP_ADDRESS_TYPES) -> bool:
 		'''
@@ -198,6 +210,8 @@ class DownstreamHandlerBlockByRate:
 		self._globalStatePath = globalStatePath
 		self._logIPs = logIPs
 
+		self._globalStateJSON = dict()
+		self._savedStateJSON = dict()
 		self._blockedState = BlockedState()
 		self._blockedStateLock = threading.Lock()
 
@@ -211,8 +225,6 @@ class DownstreamHandlerBlockByRate:
 
 	def _LoadGlobalState(self) -> None:
 		'''Load the global state from the file.'''
-
-		self._globalStateJSON = dict()
 
 		if self._globalStatePath is None:
 			return
@@ -231,24 +243,25 @@ class DownstreamHandlerBlockByRate:
 	def _LoadSavedState(self) -> None:
 		'''Load the saved state from the file.'''
 
-		self._savedStateJSON = dict()
+		if self._savedStatePath is None:
+			return
 
-		if self._savedStatePath is not None:
-			if not os.path.exists(self._savedStatePath):
-				savedStateDir = os.path.dirname(self._savedStatePath)
-				if not os.path.exists(savedStateDir):
-					raise FileNotFoundError(
-						f'Saved state directory {savedStateDir} does not exist.'
-					)
-
-				self._logger.warning(
-					'Saved state file %s does not exist. '
-					'will create a new one when saving the state.',
-					self._savedStatePath,
+		if not os.path.exists(self._savedStatePath):
+			savedStateDir = os.path.dirname(self._savedStatePath)
+			if not os.path.exists(savedStateDir):
+				raise FileNotFoundError(
+					f'Saved state directory {savedStateDir} does not exist.'
 				)
-			else:
-				with open(self._savedStatePath, 'r') as f:
-					self._savedStateJSON = json.load(f)
+
+			self._logger.warning(
+				'Saved state file %s does not exist. '
+				'will create a new one when saving the state.',
+				self._savedStatePath,
+			)
+			return
+
+		with open(self._savedStatePath, 'r') as f:
+			self._savedStateJSON = json.load(f)
 
 	def _LoadBlockedState(self) -> None:
 		'''Load the saved state from the file.'''
