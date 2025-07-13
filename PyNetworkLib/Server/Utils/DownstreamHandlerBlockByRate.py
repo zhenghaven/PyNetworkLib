@@ -368,14 +368,14 @@ class DownstreamHandlerBlockByRate:
 		clientPort = reqState.get('clientPort', None)
 
 		if self._logIPs:
-			self._logger.debug('Received request from: %s:%d', clientIP, clientPort)
+			self._logger.debug('Received request from: %s:%s', clientIP, str(clientPort))
 
 		if self.IsIpBlocked(clientIP):
 			# This IP address is blocked, do not handle the request
 			return
 
 		if self._logIPs:
-			self._logger.info('Non-blocked request from: %s:%d', clientIP, clientPort)
+			self._logger.info('Non-blocked request from: %s:%s', clientIP, str(clientPort))
 
 		return self._downstreamHandler.HandleRequest(reqState=reqState, **kwargs)
 
