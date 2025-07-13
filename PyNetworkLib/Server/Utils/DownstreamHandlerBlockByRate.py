@@ -150,6 +150,7 @@ class DownstreamHandlerBlockByRate:
 		timeWindowSec: float,
 		downstreamHandler: Any,
 		savedStatePath: None | os.PathLike = None,
+		logIPs: bool = False,
 	):
 		'''
 		Constructor for the downstream handler that blocks requests by rate.
@@ -169,6 +170,7 @@ class DownstreamHandlerBlockByRate:
 		self._timeWindowSec = timeWindowSec
 		self._downstreamHandler = downstreamHandler
 		self._savedStatePath = savedStatePath
+		self._logIPs = logIPs
 
 		self._blockedState = BlockedState()
 		self._blockedStateLock = threading.Lock()
@@ -288,6 +290,10 @@ class DownstreamHandlerBlockByRate:
 			self._logger.error('Client IP address is not provided in reqState.')
 			# Block the request if client IP is not provided
 			return
+		clientPort = reqState.get('clientPort', None)
+
+		if self._logIPs:
+			self._logger.info(f'Received request from: {clientIP}:{clientPort}')
 
 		if self.IsIpBlocked(clientIP):
 			# This IP address is blocked, do not handle the request
