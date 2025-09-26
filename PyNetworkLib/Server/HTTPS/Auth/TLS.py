@@ -21,6 +21,7 @@ from cryptography.x509 import (
 	load_der_x509_certificate,
 	Certificate,
 	DNSName as x509DNSName,
+	ExtensionNotFound,
 	NameOID as x509NameOID,
 	SubjectAlternativeName as x509SubjectAlternativeName,
 )
@@ -301,11 +302,14 @@ class TLS(DownstreamHandlerBase):
 			commonName = leafSubj.get_attributes_for_oid(
 				x509NameOID.COMMON_NAME,
 			)[0].value
-			leafCertExt = leafCert.extensions
-			subjAltName = leafCertExt.get_extension_for_class(x509SubjectAlternativeName).value.get_values_for_type(x509DNSName)
-
 			reqState['peer_common_name'] = commonName
-			reqState['peer_alt_name'] = subjAltName
+
+			leafCertExt = leafCert.extensions
+			try:
+				subjAltName = leafCertExt.get_extension_for_class(x509SubjectAlternativeName).value.get_values_for_type(x509DNSName)
+				reqState['peer_alt_name'] = subjAltName
+			except ExtensionNotFound:
+				reqState['peer_alt_name'] = []
 		except Exception as e:
 			# the peer certificate chain is not valid
 			pyHandler.LogDebug('TLS: failed to verify peer certificate chain: %s.', e)
