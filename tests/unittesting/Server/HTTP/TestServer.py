@@ -20,6 +20,7 @@ from PyNetworkLib.Server.HTTP.PyHandlerBase import PyHandlerBase
 from PyNetworkLib.Server.HTTP.Server import ThreadingServer
 from PyNetworkLib.Server.HTTP.Utils.HostField import HOST_FIELD_TYPES
 from PyNetworkLib.Server.Utils.DownstreamHandlerBlockByRate import DownstreamHandlerBlockByRate
+from PyNetworkLib.Server.Utils.DownstreamAllowList import DownstreamAllowList
 from PyNetworkLib.Server.Utils.HandlerState import HandlerState
 
 
@@ -88,11 +89,15 @@ class TestServer(unittest.TestCase):
 		server.Terminate()
 
 	def test_Server_HTTP_Server_02ReqAndResp(self):
-		# test using DownstreamHandlerBlockByRate
+		# test using DownstreamHandlerBlockByRate and DownstreamAllowList
 		dowmHdlr = DownstreamHandlerBlockByRate(
 			maxNumRequests=10,
 			timeWindowSec=10.0,
-			downstreamHandler=HappyDownstreamHandler(),
+			downstreamHandler=DownstreamAllowList(
+				allowListOrFile=['127.0.0.1/32', '::1/128'],
+				downstreamHandler=HappyDownstreamHandler(),
+				logIPs=True,
+			),
 			savedStatePath=None,
 		)
 
